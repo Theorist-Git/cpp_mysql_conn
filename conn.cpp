@@ -19,10 +19,7 @@
 #define USER "root"
 #define KEY ""
 
-using namespace std;
-
-int main(void)
-{
+int main(void) {
     try
     {
         sql::Driver *driver;
@@ -39,15 +36,14 @@ int main(void)
         con->setSchema(DATABASE);
 
         stmt = con->createStatement();
-        res = stmt->executeQuery("select * from Sailor");
-        while (res->next())
-        {
+        res = stmt->executeQuery("SELECT * FROM Sailor");
+        while (res->next()) {
             /* Access column data by alias or column name */
-            cout << res->getString(1) << "\t";
-            cout << res->getString(2) << "\t";
-            cout << res->getString(3) << "\t";
-            cout << res->getString(4) << "\t";
-            cout << endl;
+            std::cout << res->getString(1) << "\t";
+            std::cout << res->getString(2) << "\t";
+            std::cout << res->getString(3) << "\t";
+            std::cout << res->getString(4) << "\t";
+            std::cout << std::endl;
         }
 
         prep_stmt = con->prepareStatement(
@@ -66,16 +62,15 @@ int main(void)
         delete stmt;
         delete con;
     }
-    catch (sql::SQLException &e)
-    {
-        cout << "# ERR: SQLException in " << __FILE__;
-        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-        cout << "# ERR: " << e.what();
-        cout << " (MySQL error code: " << e.getErrorCode();
-        cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+    catch (sql::SQLException &e) {
+        std::cout << "# ERR: SQLException in " << __FILE__;
+        std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+        std::cout << "# ERR: " << e.what();
+        std::cout << " (MySQL error code: " << e.getErrorCode();
+        std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
     }
 
-    cout << endl;
+    std::cout << std::endl;
 
     return EXIT_SUCCESS;
 }
