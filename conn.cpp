@@ -36,6 +36,18 @@ int main(void) {
         con->setSchema(DATABASE);
 
         stmt = con->createStatement();
+
+        prep_stmt = con->prepareStatement(
+            "INSERT INTO Sailor (SID, SNAME, RATING, DOB) VALUES (?, ?, ?, ?)"
+        );
+
+        prep_stmt->setInt(1, 5);
+        prep_stmt->setString(2, "MAYANK");
+        prep_stmt->setInt(3, 10);
+        prep_stmt->setDateTime(4, "2003-10-31");
+
+        prep_stmt->execute();
+
         res = stmt->executeQuery("SELECT * FROM Sailor");
         while (res->next()) {
             /* Access column data by alias or column name */
@@ -45,17 +57,6 @@ int main(void) {
             std::cout << res->getString(4) << "\t";
             std::cout << std::endl;
         }
-
-        prep_stmt = con->prepareStatement(
-            "INSERT INTO Sailor (SID, SNAME, RATING, DOB) VALUES (?, ?, ?, ?)"
-        );
-
-        prep_stmt->setInt(1, 4);
-        prep_stmt->setString(2, "MAYANK");
-        prep_stmt->setInt(3, 10);
-        prep_stmt->setDateTime(4, "2003-10-21");
-
-        prep_stmt->execute();
 
         delete res;
         delete prep_stmt;
