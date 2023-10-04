@@ -142,7 +142,6 @@ int create_table(std::string db, std::pair<std::string, std::string> table, sql:
     sql::Statement* stmt;
 
     try {
-        sql::Statement* stmt;
         stmt = conn->createStatement();
         conn->setSchema(db);
         stmt->execute("CREATE TABLE " + table.first + "(" + table.second + ")");
