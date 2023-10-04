@@ -30,18 +30,19 @@ int main() {
         conn, 
         "Insert into wrapper values (1, 'mayank', 'vats', '2003-10-21'); ", 0
     ).second;
+    std::cout << "Result of stmt:\nInsert into wrapper values (1, 'mayank', 'vats', '2003-10-21');\n: " << c1_res << std::endl;
 
     exec_arbitrary_stmt(
         DATABASE, 
         conn, 
-        "Insert into wrapper values (2, 'knayam', 'vats', '2003-10-21'); ", 0
+        "Insert into wrapper values (1, 'knayam', 'vats', '2003-10-21'); ", 0
     ).second;
 
     /*
         Arbitrary statement execution
         Case 2: Result set IS expected from query:
     */
-    sql::ResultSet* test = exec_arbitrary_stmt(DATABASE, conn, "Select  * from wrapper").first;
+    sql::ResultSet* test = exec_arbitrary_stmt(DATABASE, conn, "Select distinct lname from wrapper").first;
     cout_result_set(test);
 
     // Gets the table structure

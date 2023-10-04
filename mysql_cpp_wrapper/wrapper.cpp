@@ -38,37 +38,60 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "conn_macros.hpp"
 
 void err_catch(sql::SQLException &e) {
-    std::cout << RED <<  "- [ERROR]: SQLException in " << __FILE__;
-    std::cout << RED << " (" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
-    std::cout << RED << "- [ERROR]: " << e.what();
-    std::cout << RED << " (MySQL error code: " << e.getErrorCode();
-    std::cout << RED << ", SQLState: " << e.getSQLState() << " )" << RESET << std::endl;
+
+    /*
+    Handles all the SQLExceptions that may occur in any function
+    [ERROR](s) are displayed only when DEBUG_LEVEL macro is defined to be <= 2
+    */
+
+    if (DEBUG_LEVEL <= 2) {
+        std::cout << RED <<  "- [ERROR]: SQLException in " << __FILE__;
+        std::cout << RED << " (" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+        std::cout << RED << "- [ERROR]: " << e.what();
+        std::cout << RED << " (MySQL error code: " << e.getErrorCode();
+        std::cout << RED << ", SQLState: " << e.getSQLState() << " )" << RESET << std::endl;
+    }
 }
 
 void cout_result_set(sql::ResultSet* res) {
+
+    /*
+    Prints a sql::ResultSet* type object to stdout
+    Utilizes <iomanip> library to generate tables.
+    Refer:
+        - [https://www.delftstack.com/howto/cpp/create-table-in-cpp/]
+        - [https://cplusplus.com/reference/iomanip/]
+    */
+
     sql::ResultSetMetaData* rsmd = res->getMetaData();
-    int col_count = rsmd->getColumnCount();
+    size_t col_count = rsmd->getColumnCount();
     size_t i = 1;
 
+    // Print out all the columns
     while (i <= col_count) {
         std::string col_name = "|" + rsmd->getColumnName(i++) + "|";
         std::cout << std::left << std::setw(15) << col_name;
     }
     std::cout << std::endl;
+    // Reset iterator to base value ≡ 1
     i = 1;
     
-    
+    // Print rows
+    // NOTE: All fields are printed as strings.
     while (res->next()) {
         while (i <= col_count) {
             std::cout << std::left << std::setw(15) << res->getString(i++);
         }
         std::cout << std::endl;
         i = 1;
-    }  
-
+    }
+    std::cout << std::endl;  
 }
 
 sql::Connection* est_conn() {
+
+    /* Establishes connection to an SQL server via macros defined in conn_macros.hpp */
+
     try {
         sql::Driver* driver;
         sql::Connection* conn;
@@ -97,6 +120,9 @@ sql::Connection* est_conn() {
 }
 
 int close_conn(sql::Connection* conn) {
+
+    /* Closes connection to an SQL server. */
+
     try {
         delete conn;
         
@@ -121,6 +147,9 @@ int close_conn(sql::Connection* conn) {
 }
 
 int create_db(std::string db, sql::Connection* conn) {
+
+    /* Creates a database on the connected SQL server. */
+
     sql::Statement *stmt;
 
     try {
@@ -151,6 +180,9 @@ int create_db(std::string db, sql::Connection* conn) {
 }
 
 int delete_db(std::string db, sql::Connection* conn) {
+
+    /* Deletes a database on the connected SQL server. */
+
     sql::Statement *stmt;
 
     try {
@@ -181,6 +213,16 @@ int delete_db(std::string db, sql::Connection* conn) {
 }
 
 int create_table(std::string db, std::pair<std::string, std::string> table, sql::Connection* conn) {
+    /*
+    Tables are parsed as pair objects where .first = table_name and .second = table_schema
+
+    Eg: 
+    std::pair<std::string, std::string> table = {
+        "wrapper", // Table name
+        "id INTEGER, fname VARCHAR(20), lname VARCHAR(20), dob DATE, PRIMARY KEY(id)" // Schema
+    };
+
+    */
     sql::Statement* stmt;
 
     try {
@@ -216,6 +258,22 @@ sql::ResultSet* get_table_schema(
     std::pair<std::string, std::optional<std::string>> table,
     sql::Connection* conn
 ) {
+
+    /*
+    Equivalent to query: DESCRIBE table_name;
+    Tables are still parsed as pair objects where .first = table_name
+    but .second = table_schema is an optional parameter a perfectly valid arg for table could be:
+
+    Eg: 
+    std::pair<std::string, std::optional<std::string>> table = {
+        "wrapper", // Table name
+        std::nullopt // Schema
+    };
+
+    It is NOT necessary to know the table_schema for this function
+
+    */
+
     sql::Statement* stmt;
 
     try {
@@ -227,7 +285,7 @@ sql::ResultSet* get_table_schema(
 
         switch (DEBUG_LEVEL) {
             case 0:
-                std::cout << "- [DEBUG]: DESCRIBE TABLE" + table.first << std::endl;
+                std::cout << "- [DEBUG]: DESCRIBE TABLE " + table.first << std::endl;
             case 1:
                 std::cout << GREEN << "- [INFO] : Scheme of `" << table.first << "` Returned" << 
                 RESET << std::endl;
@@ -249,6 +307,9 @@ sql::ResultSet* get_table_schema(
 }
 
 int delete_table(std::string db, std::pair<std::string, std::string> table, sql::Connection* conn) {
+
+    /* Deletes a table on the connected SQL server in the specified database. */
+
     sql::Statement* stmt;
 
     try {
@@ -285,6 +346,30 @@ std::pair<sql::ResultSet*, int> exec_arbitrary_stmt(
     std::string query,
     int result_set_expected = 1
 ) {
+
+    /*
+    Executes any SQL query directly.
+    The query parameter has raw SQL queries.
+
+    c++ SQL connector has two types of execute methods:
+        1) executeQuery() => Returns sql::ResultSet* type object for queries like SELECT, DESCRIBE etc.
+        2) execute() => Returns boolean type object for queries like ALTER, CREATE etc.
+
+    The parameter result_set_expected is used to decide between these methods.
+    Since return value could be either of sql::ResultSet* and int, the function returns a pair object
+
+    IF result_set_expected = 1: EXECUTE executeQuery() command             [NO USEFUL INT REturn] 
+      RETURN std::pair<sql::ResultSet*, int> = {stmt->executeQuery(query), -1};
+                                                      ^^^^^^^^^^^^
+                                                      [returns sql::ResultSet]   
+                                                             
+    ELSE EXECUTE execute() command
+        RETURN std::pair<sql::ResultSet*, int> = {NULL, stmt->execute(query)};
+                                                              ^^^^^^^
+                                                              [returns bool(typecasted to int)]
+
+    */
+
     sql::Statement* stmt;
 
     try {

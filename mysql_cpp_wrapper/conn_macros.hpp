@@ -1,6 +1,6 @@
 #pragma once
 
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 2
 
 #define HOST "localhost"
 #define USER "root"
