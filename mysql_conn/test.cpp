@@ -13,7 +13,7 @@ int main() {
         "id INTEGER, fname VARCHAR(20), lname VARCHAR(20), dob DATE, PRIMARY KEY(id)" // Schema
     };
     create_table(DATABASE, table, conn);
-    exec_arbitrary_stmt(DATABASE, conn, "CREATE table shit(shit_id INTEGER)");
+    exec_arbitrary_stmt(DATABASE, conn, "alter table wrapper add shit integer", 0);
 
     sql::ResultSet* res = get_table_schema(DATABASE, table, conn);
 
@@ -40,7 +40,7 @@ int main() {
 
 
     delete_table(DATABASE, table, conn);
-    delete_table(DATABASE, {"shit", ""}, conn);
+    // delete_table(DATABASE, {"shit", ""}, conn);
     delete_db("wrapper_test", conn);
 
     close_conn(conn);

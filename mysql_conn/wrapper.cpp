@@ -227,52 +227,45 @@ int delete_table(std::string db, std::pair<std::string, std::string> table, sql:
     }
 }
 
-sql::ResultSet* exec_arbitrary_stmt(std::string db, sql::Connection* conn, std::string query) {
+std::pair<sql::ResultSet*, int> exec_arbitrary_stmt(
+    std::string db, 
+    sql::Connection* conn, 
+    std::string query,
+    int result_set_expected = 1
+) {
     try {
         sql::Statement* stmt;
-        sql::ResultSet* res;
+        std::pair<sql::ResultSet*, int> res;
         stmt = conn->createStatement();
         conn->setSchema(db);
-        
-        res = stmt->executeQuery(query);
+
+        if (result_set_expected) {
+            res = {stmt->executeQuery(query), -1};
+        } else {
+            res = {NULL, stmt->execute(query)};
+        }
 
         switch (DEBUG_LEVEL) {
             case 0:
                 std::cout << "- [DEBUG]: EXECUTED STATEMENT: \n\t`" << query << "`" << std::endl;
             case 1:
                 std::cout << GREEN << "- [INFO] : Query successful `" << "Exit Code: " << EXIT_SUCCESS << 
-                "\n\tResult returned by the function [an sql::ResultSet* type variable is returned]" << RESET << std::endl;
+                "\n\tA std::pair<sql::ResultSet*, int> type object is returned\n \
+                For queries that return a ResultSet, return {sql::ResultSet, -1}\n \
+                For queries returning a bolean object, return {NULL, 0/1}" << RESET << std::endl;
                 break;
             default:
                 break;
-        }
+        }   
 
         delete stmt;
 
         return res;
 
     } catch(sql::SQLException &e) {
-        if (e.getErrorCode() == 0 && e.getSQLState() == "00000") {
+        err_catch(e);
 
-            switch (DEBUG_LEVEL) {
-                case 0:
-                    std::cout << "- [DEBUG]: EXECUTED STATEMENT: \n\t`" << query << "`" << std::endl;
-                case 1:
-                    std::cout << GREEN << "- [INFO] : Query successful `" << "Exit Code: " << EXIT_SUCCESS << 
-                    "\n\tQuery doesn't return a sql::ResultSet* type object" << RESET << std::endl;
-                    break;
-                default:
-                    break;
-            }
-
-            return NULL;
-
-        } else {
-            err_catch(e);
-            
-            return NULL;
-        }
-
+        return {NULL, -1};
     }
 }
 
