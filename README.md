@@ -2,7 +2,7 @@
 
 * See `xampcpp.pdf` for instructions.
 
-# Execute Instructions
+## Execute Instructions
 
 ```bash
 chmod +x make_env.sh
