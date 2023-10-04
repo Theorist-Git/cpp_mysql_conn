@@ -79,8 +79,9 @@ int close_conn(sql::Connection* conn) {
 }
 
 int create_db(std::string db, sql::Connection* conn) {
+    sql::Statement *stmt;
+
     try {
-        sql::Statement *stmt;
         stmt = conn->createStatement();
         stmt->execute("CREATE DATABASE " + db);
 
@@ -101,14 +102,16 @@ int create_db(std::string db, sql::Connection* conn) {
 
     } catch(sql::SQLException &e) {
         err_catch(e);
+        delete stmt;
 
         return EXIT_FAILURE;
     }
 }
 
 int delete_db(std::string db, sql::Connection* conn) {
+    sql::Statement *stmt;
+
     try {
-        sql::Statement *stmt;
         stmt = conn->createStatement();
         stmt->execute("DROP DATABASE `" + db + "`");
 
@@ -129,12 +132,15 @@ int delete_db(std::string db, sql::Connection* conn) {
 
     } catch(sql::SQLException &e) {
         err_catch(e);
+        delete stmt;
 
         return EXIT_FAILURE;
     }
 }
 
 int create_table(std::string db, std::pair<std::string, std::string> table, sql::Connection* conn) {
+    sql::Statement* stmt;
+
     try {
         sql::Statement* stmt;
         stmt = conn->createStatement();
@@ -158,6 +164,7 @@ int create_table(std::string db, std::pair<std::string, std::string> table, sql:
 
     } catch(sql::SQLException &e) {
         err_catch(e);
+        delete stmt;
 
         return EXIT_FAILURE;
     }
@@ -168,8 +175,9 @@ sql::ResultSet* get_table_schema(
     std::pair<std::string, std::optional<std::string>> table,
     sql::Connection* conn
 ) {
+    sql::Statement* stmt;
+
     try {
-        sql::Statement* stmt;
         sql::ResultSet* res;
         stmt = conn->createStatement();
 
@@ -193,14 +201,16 @@ sql::ResultSet* get_table_schema(
 
     } catch(sql::SQLException &e) {
         err_catch(e);
+        delete stmt;
 
         return NULL;
     }
 }
 
 int delete_table(std::string db, std::pair<std::string, std::string> table, sql::Connection* conn) {
+    sql::Statement* stmt;
+
     try {
-        sql::Statement* stmt;
         stmt = conn->createStatement();
         conn->setSchema(db);
         stmt->execute("DROP TABLE " + table.first);
@@ -222,6 +232,7 @@ int delete_table(std::string db, std::pair<std::string, std::string> table, sql:
 
     } catch(sql::SQLException &e) {
         err_catch(e);
+        delete stmt;
 
         return EXIT_FAILURE;
     }
@@ -233,8 +244,9 @@ std::pair<sql::ResultSet*, int> exec_arbitrary_stmt(
     std::string query,
     int result_set_expected = 1
 ) {
+    sql::Statement* stmt;
+
     try {
-        sql::Statement* stmt;
         std::pair<sql::ResultSet*, int> res;
         stmt = conn->createStatement();
         conn->setSchema(db);
@@ -250,9 +262,9 @@ std::pair<sql::ResultSet*, int> exec_arbitrary_stmt(
                 std::cout << "- [DEBUG]: EXECUTED STATEMENT: \n\t`" << query << "`" << std::endl;
             case 1:
                 std::cout << GREEN << "- [INFO] : Query successful `" << "Exit Code: " << EXIT_SUCCESS << 
-                "\n\tA std::pair<sql::ResultSet*, int> type object is returned\n \
-                For queries that return a ResultSet, return {sql::ResultSet, -1}\n \
-                For queries returning a bolean object, return {NULL, 0/1}" << RESET << std::endl;
+                "\n\tA std::pair<sql::ResultSet*, int> type object is returned\n" <<
+                "\tFor queries that return a ResultSet, return {sql::ResultSet, -1}\n" <<  
+                "\tFor queries returning a bolean object, return {NULL, 0/1}" << RESET << std::endl;
                 break;
             default:
                 break;
@@ -264,6 +276,7 @@ std::pair<sql::ResultSet*, int> exec_arbitrary_stmt(
 
     } catch(sql::SQLException &e) {
         err_catch(e);
+        delete stmt;
 
         return {NULL, -1};
     }

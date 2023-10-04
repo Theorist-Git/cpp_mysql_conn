@@ -1,4 +1,4 @@
-# Connect xampp MySQL server to c++
+<!-- # Connect xampp MySQL server to c++
 
 * See `xampcpp.pdf` for instructions.
 
@@ -31,4 +31,4 @@ XAMPP: Starting MySQL...already running.
 3       Dolor   9       1995-08-26
 5       MAYANK  10      2003-10-31
 
-```
+``` -->
