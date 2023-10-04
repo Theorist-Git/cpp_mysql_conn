@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <optional>
+#include <iomanip>
 
 /*
   Include directly the different
@@ -24,6 +25,29 @@ void err_catch(sql::SQLException &e) {
     std::cout << RED << "- [ERROR]: " << e.what();
     std::cout << RED << " (MySQL error code: " << e.getErrorCode();
     std::cout << RED << ", SQLState: " << e.getSQLState() << " )" << RESET << std::endl;
+}
+
+void cout_result_set(sql::ResultSet* res) {
+    sql::ResultSetMetaData* rsmd = res->getMetaData();
+    int col_count = rsmd->getColumnCount();
+    size_t i = 1;
+
+    while (i <= col_count) {
+        std::string col_name = "|" + rsmd->getColumnName(i++) + "|";
+        std::cout << std::left << std::setw(15) << col_name;
+    }
+    std::cout << std::endl;
+    i = 1;
+    
+    
+    while (res->next()) {
+        while (i <= col_count) {
+            std::cout << std::left << std::setw(15) << res->getString(i++);
+        }
+        std::cout << std::endl;
+        i = 1;
+    }  
+
 }
 
 sql::Connection* est_conn() {

@@ -1,48 +1,60 @@
 #include "wrapper.cpp"
 #include <iostream>
 #include <iomanip>
-#include <optional>
 
 int main() {
+    /* 
+        Establish Connection with the server
+        HOST, USER and KEY must be defined in a file called conn_macros.hpp
+    */
     sql::Connection* conn = est_conn();
 
+    /* Create a database with name defined in conn_macros.hpp */
     create_db(DATABASE, conn);
     
+    /* Create a table pair object where .first = table_name and .second = table_schema */
     std::pair<std::string, std::string> table = {
         "wrapper", // Table name
         "id INTEGER, fname VARCHAR(20), lname VARCHAR(20), dob DATE, PRIMARY KEY(id)" // Schema
     };
     create_table(DATABASE, table, conn);
-    // exec_arbitrary_stmt(DATABASE, conn, "alter table wrapper add shit integer", 0);
 
+    /*
+        Arbitrary statement execution
+        Case 1: Result set IS NOT expected from query:
+    */
+
+    // c1_res stores success or failure of the query
+    int c1_res = exec_arbitrary_stmt(
+        DATABASE, 
+        conn, 
+        "Insert into wrapper values (1, 'mayank', 'vats', '2003-10-21'); ", 0
+    ).second;
+
+    exec_arbitrary_stmt(
+        DATABASE, 
+        conn, 
+        "Insert into wrapper values (2, 'knayam', 'vats', '2003-10-21'); ", 0
+    ).second;
+
+    /*
+        Arbitrary statement execution
+        Case 2: Result set IS expected from query:
+    */
+    sql::ResultSet* test = exec_arbitrary_stmt(DATABASE, conn, "Select  * from wrapper").first;
+    cout_result_set(test);
+
+    // Gets the table structure
     sql::ResultSet* res = get_table_schema(DATABASE, table, conn);
-
-    std::cout << std::left << std::setw(10) << "|Field|" <<
-                 std::left << std::setw(15) << "|Type|" <<
-                 std::left << std::setw(10) << "|Null|" <<
-                 std::left << std::setw(10) << "|Key|" <<
-                 std::left << std::setw(10) << "|Default|" <<
-                 std::left << std::setw(10) << "|Extra|"
-    << std::endl;
-
-    while (res->next()) {
-        std::cout << \
-                std::left << std::setw(10) << res->getString(1) <<
-                std::left << std::setw(15) << res->getString(2) <<
-                std::left << std::setw(10) << res->getString(3) <<
-                std::left << std::setw(10) << res->getString(4) <<
-                std::left << std::setw(10) << res->getString(5) <<
-                std::left << std::setw(10) << res->getString(6)       
-        << std::endl;
-    }
+    cout_result_set(res);
 
     delete res;
 
-
+    /* Delete the previously created table and database */
     delete_table(DATABASE, table, conn);
-    // delete_table(DATABASE, {"shit", ""}, conn);
     delete_db("wrapper_test", conn);
 
+    /* Close the connection between server and client */
     close_conn(conn);
 
     return 0;
