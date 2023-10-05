@@ -35,7 +35,7 @@ int main() {
     exec_arbitrary_stmt(
         DATABASE, 
         conn, 
-        "Insert into wrapper values (1, 'knayam', 'vats', '2003-10-21'); ", 0
+        "Insert into wrapper values (2, 'knayam', 'vats', '2003-10-21'); ", 0
     ).second;
 
     /*

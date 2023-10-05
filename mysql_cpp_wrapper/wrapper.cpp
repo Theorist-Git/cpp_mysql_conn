@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <iostream>
 #include <vector>
 #include <optional>
-#include <iomanip>
+#include <iomanip>  /* To create tables */
 
 /*
   Include directly the different
