@@ -1,2 +1,3 @@
 bin
 .vscode
+mysql_cpp_wrapper/make_env.sh
