@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <iostream>
 #include <vector>
 #include <optional>
-#include <iomanip>  /* To create tables */
+#include <iomanip>  /* To print tables to stdout file */
 
 /*
   Include directly the different
@@ -35,7 +35,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <cppconn/statement.h>
 #include <cppconn/prepared_statement.h>
 
-#include "conn_macros.hpp"
+/*
+  Terminal formatting macros.
+*/
+#define RESET   "\033[0m"
+#define RED     "\033[31m" 
+#define GREEN   "\033[32m" 
+#define DEBUG_LEVEL 0
 
 void err_catch(sql::SQLException &e) {
 
@@ -88,7 +94,7 @@ void cout_result_set(sql::ResultSet* res) {
     std::cout << std::endl;  
 }
 
-sql::Connection* est_conn() {
+sql::Connection* est_conn(std::string host, std::string user, std::string key) {
 
     /* Establishes connection to an SQL server via macros defined in conn_macros.hpp */
 
@@ -98,13 +104,13 @@ sql::Connection* est_conn() {
 
         /* Create a connection */
         driver = get_driver_instance();
-        conn = driver->connect(HOST, USER, KEY);
+        conn = driver->connect(host, user, key);
 
         switch (DEBUG_LEVEL) {
             case 0:
-                std::cout << "- [DEBUG]: Connect(HOST, USER, KEY)" << std::endl;
+                std::cout << "- [DEBUG]: driver->connect(host, user, key);" << std::endl;
             case 1:
-                std::cout << GREEN << "- [INFO] : Connected to `" << USER << "` at `" << HOST << "`" << 
+                std::cout << GREEN << "- [INFO] : Connected to `" << user << "` at `" << host << "`" << 
                 RESET << std::endl;
                 break;
             default:
@@ -130,7 +136,7 @@ int close_conn(sql::Connection* conn) {
             case 0:
                 std::cout << "- [DEBUG]: delete conn" << std::endl;
             case 1:
-                std::cout << GREEN << "- [INFO] : Disconnected from `" << USER << "` at `" << HOST << "`" << 
+                std::cout << GREEN << "- [INFO] : Disconnected from HOST" <<
                 RESET << std::endl;
                 break;
             default:
@@ -191,7 +197,7 @@ int delete_db(std::string db, sql::Connection* conn) {
 
         switch (DEBUG_LEVEL) {
             case 0:
-                std::cout << "- [DEBUG]: DROP DATABASE " << db << std::endl;
+                std::cout << "- [DEBUG]: stmt->execute : DROP DATABASE `" << db  << "`" << std::endl;
             case 1:
                 std::cout << GREEN << "- [INFO] : Database `" << db << "` Deleted successfully" << 
                 RESET << std::endl;
@@ -232,7 +238,7 @@ int create_table(std::string db, std::pair<std::string, std::string> table, sql:
 
         switch (DEBUG_LEVEL) {
             case 0:
-                std::cout << "- [DEBUG]: CREATE TABLE " + table.first + "(" + table.second + ")" << std::endl;
+                std::cout << "- [DEBUG]: stmt->execute : CREATE TABLE " + table.first + "(" + table.second + ")" << std::endl;
             case 1:
                 std::cout << GREEN << "- [INFO] : Table `" << table.first << "` created in `" << db << "`" << 
                 RESET << std::endl;
@@ -253,58 +259,6 @@ int create_table(std::string db, std::pair<std::string, std::string> table, sql:
     }
 }
 
-sql::ResultSet* get_table_schema(
-    std::string db, 
-    std::pair<std::string, std::optional<std::string>> table,
-    sql::Connection* conn
-) {
-
-    /*
-    Equivalent to query: DESCRIBE table_name;
-    Tables are still parsed as pair objects where .first = table_name
-    but .second = table_schema is an optional parameter a perfectly valid arg for table could be:
-
-    Eg: 
-    std::pair<std::string, std::optional<std::string>> table = {
-        "wrapper", // Table name
-        std::nullopt // Schema
-    };
-
-    It is NOT necessary to know the table_schema for this function
-
-    */
-
-    sql::Statement* stmt;
-
-    try {
-        sql::ResultSet* res;
-        stmt = conn->createStatement();
-
-        conn->setSchema(db);
-        res = stmt->executeQuery("DESCRIBE " + table.first);
-
-        switch (DEBUG_LEVEL) {
-            case 0:
-                std::cout << "- [DEBUG]: DESCRIBE TABLE " + table.first << std::endl;
-            case 1:
-                std::cout << GREEN << "- [INFO] : Scheme of `" << table.first << "` Returned" << 
-                RESET << std::endl;
-                break;
-            default:
-                break;
-        }
-
-        delete stmt;
-
-        return res;
-
-    } catch(sql::SQLException &e) {
-        err_catch(e);
-        delete stmt;
-
-        return NULL;
-    }
-}
 
 int delete_table(std::string db, std::pair<std::string, std::string> table, sql::Connection* conn) {
 
@@ -340,7 +294,44 @@ int delete_table(std::string db, std::pair<std::string, std::string> table, sql:
     }
 }
 
-std::pair<sql::ResultSet*, int> exec_arbitrary_stmt(
+sql::ResultSet* get_table_schema(std::string db, std::string table, sql::Connection* conn) {
+    /*
+    Equivalent to query: DESCRIBE table_name;
+    It is NOT necessary to know the table_schema for this function
+    */
+    sql::Statement* stmt;
+
+    try {
+        sql::ResultSet* res;
+        stmt = conn->createStatement();
+
+        conn->setSchema(db);
+        res = stmt->executeQuery("DESCRIBE " + table);
+
+        switch (DEBUG_LEVEL) {
+            case 0:
+                std::cout << "- [DEBUG]: DESCRIBE TABLE " + table << std::endl;
+            case 1:
+                std::cout << GREEN << "- [INFO] : Scheme of `" << table << "` Returned" << 
+                RESET << std::endl;
+                break;
+            default:
+                break;
+        }
+
+        delete stmt;
+
+        return res;
+
+    } catch(sql::SQLException &e) {
+        err_catch(e);
+        delete stmt;
+
+        return NULL;
+    }
+}
+
+std::pair<sql::ResultSet*, int> exec_stmt(
     std::string db, 
     sql::Connection* conn, 
     std::string query,
@@ -385,12 +376,12 @@ std::pair<sql::ResultSet*, int> exec_arbitrary_stmt(
 
         switch (DEBUG_LEVEL) {
             case 0:
-                std::cout << "- [DEBUG]: EXECUTED STATEMENT: \n\t`" << query << "`" << std::endl;
+                std::cout << "- [DEBUG]: EXECUTED STATEMENT: \n`" << query << "`" << std::endl;
             case 1:
                 std::cout << GREEN << "- [INFO] : Query successful `" << "Exit Code: " << EXIT_SUCCESS << 
-                "\n\tA std::pair<sql::ResultSet*, int> type object is returned\n" <<
-                "\tFor queries that return a ResultSet, return {sql::ResultSet, -1}\n" <<  
-                "\tFor queries returning a bolean object, return {NULL, 0/1}" << RESET << std::endl;
+                "\n\t  A std::pair<sql::ResultSet*, int> type object is returned\n" <<
+                "\t  For queries that return a ResultSet, return {sql::ResultSet, -1}\n" <<  
+                "\t  For queries returning a bolean object, return {NULL, 0/1}" << RESET << std::endl;
                 break;
             default:
                 break;
@@ -407,4 +398,3 @@ std::pair<sql::ResultSet*, int> exec_arbitrary_stmt(
         return {NULL, -1};
     }
 }
-
